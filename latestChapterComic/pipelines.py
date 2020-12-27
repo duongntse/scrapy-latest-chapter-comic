@@ -34,7 +34,7 @@ class JsonPipeline(object):
     def close_spider(self, spider):
         # write data to items.json
         f = open('items.json', 'w')
-        self.my_items.sort(key=lambda x: x['raw_time'], reverse=True)
+
         f.write(json.dumps(self.my_items))
         f.write("\n")
         f.close()
