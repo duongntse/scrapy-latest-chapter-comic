@@ -51,4 +51,4 @@ class JsonPipeline(object):
         item.setdefault('fox_chapters', [])
         item.setdefault('panda_chapters', [])
 
-        self.my_comics.append(dict(item))
+        self.my_items.append(dict(item))
