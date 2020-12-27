@@ -35,48 +35,71 @@ class BlackcloverSpider(scrapy.Spider):
         data_conf = response.css(
             'div.wpcdt-date-conf').css('::attr(data-conf)').get()
         data = json.loads(data_conf)
-        raw_time = moment.date(data['date']).format('DD MMM YYYY hh:mm:ss')
+        raw_time = moment.date(data['date']).format('DD MMM YYYY HH:mm:ss')
         return raw_time
 
-    # def start_requests(self):
-    #     for url in self.start_urls:
-    #         yield SplashRequest(url, self.parse, args={'wait': 0.5})
-
-    def parse(self, response):
-
-        css_cover_img = 'li.blocks-gallery-item figure img.wp-image-1947'
-        css_header_title = 'header.entry-header > h1.entry-title'
-        css_chapter_li = 'li#ceo_latest_comics_widget-3 > ul > li:nth-child(1)'
-        css_prevchapter_li = 'li#ceo_latest_comics_widget-3 > ul > li:nth-child(2)'
-
+    def getCoverImg(self, response, css_cover_img):
         if(self.cover_img is None):
             self.cover_img = response.css(
                 css_cover_img).css('::attr(src)').get()
+
+    def getComicName(self, response, css_header_title):
         if(self.comic_name is None):
             self.comic_name = response.css(
                 css_header_title).css('::text').get()
 
+    def getNewChapterLinkText(self, response, css_chapter_li, css_prevchapter_li):
         new_chapter = response.css(css_chapter_li)
+
         if(self.chapter_number_text is None):
-            self.prev_chap["chapter_number_text"] = response.css(
-                css_prevchapter_li).css('a::text').get().split(',')[1].strip(' ')
             self.chapter_number_text = new_chapter.css(
                 'a::text').get().split(',')[1].strip(' ')
+
         if(self.chapter_number_link is None):
-            self.prev_chap["chapter_number_link"] = response.css(
-                css_prevchapter_li).css('a::attr(href)').get()
             self.chapter_number_link = new_chapter.css('a::attr(href)').get()
 
+    def getPrevChapterLinkText(self, response, css_chapter_li, css_prevchapter_li):
+        new_chapter = response.css(css_chapter_li)
+
+        if(self.prev_chap["chapter_number_text"] is None):
+            self.prev_chap["chapter_number_text"] = response.css(
+                css_prevchapter_li).css('a::text').get().split(',')[1].strip(' ')
+
+        if(self.prev_chap["chapter_number_link"] is None):
+            self.prev_chap["chapter_number_link"] = response.css(
+                css_prevchapter_li).css('a::attr(href)').get()
+
+    def getNewChapterTime(self, response):
         data_conf = response.css(
             'div.wpcdt-date-conf').css('::attr(data-conf)').get()
-
-        if(data_conf is not None):
-            self.raw_time = self.getTimeCount(response)
 
         if(data_conf is not None):
             self.page = 2
             self.raw_time = self.getTimeCount(response)
 
+    def parse(self, response):
+        print("parse")
+        css_cover_img = 'li.blocks-gallery-item figure img.wp-image-1947'
+        css_header_title = 'header.entry-header > h1.entry-title'
+        css_chapter_li = 'li#ceo_latest_comics_widget-3 > ul > li:nth-child(1)'
+        css_prevchapter_li = 'li#ceo_latest_comics_widget-3 > ul > li:nth-child(2)'
+        # ----------------------------------------------
+        self.getCoverImg(response, css_cover_img)
+
+        # ----------------------------------------------
+        self.getComicName(response, css_header_title)
+
+        # ----------------------------------------------
+        self.getNewChapterLinkText(
+            response, css_chapter_li, css_prevchapter_li)
+
+        self.getPrevChapterLinkText(
+            response, css_chapter_li, css_prevchapter_li)
+
+        # ----------------------------------------------
+        self.getNewChapterTime(response)
+
+        # ----------------------------------------------
         if (self.chapter_number_link is not None):
             yield response.follow(self.chapter_number_link, self.parse)
 

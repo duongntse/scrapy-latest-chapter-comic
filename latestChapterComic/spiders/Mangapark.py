@@ -11,7 +11,7 @@ import scrapy
 
 
 """ ___Using with $python3 run.py___
- 
+
 """
 
 
@@ -32,6 +32,16 @@ class MangaparkSpider(scrapy.Spider):
     custom_settings = {
         'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
     }
+
+    def versionDuck(self):
+        stream = '#stream_4'
+#
+    def versionRock(self):
+        stream = '#stream_6'
+#
+    def versionFox(self):
+        stream = '#stream_1'
+#
 
     def parse(self, response):
         base_site_name = 'Mangapark'
@@ -68,7 +78,7 @@ class MangaparkSpider(scrapy.Spider):
             stream = talesofdemonsandgodsmadsnail
         if(manga_name == 'gosu'):
             stream = gosu
-        
+
         print(f'stream: {stream}')
         css_cover_img_tag = 'body > section.manga:nth-child(2) > div.container.content > div.row:nth-child(2) > div.col-12.col-md-3:nth-child(1) > div.cover > img'
         css_ul_tag = f'div{stream} > div.volume > ul.chapter'
