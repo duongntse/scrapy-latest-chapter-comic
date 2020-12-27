@@ -25,52 +25,71 @@ class ManganeloSpider(scrapy.Spider):
         'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
     }
 
-    def parse(self, response):
-        # css
-        base_site_name = 'Manganelo'
-        base_site_url = 'https://manganelo.com'
-        css_cover_img_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-info:nth-child(5) > div.story-info-left:nth-child(1) > span.info-image:nth-child(1) > img.img-loading:nth-child(1)'
+    def getComicName(self, response):
         css_h1_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-info:nth-child(5) > div.story-info-right:nth-child(2) > h1:nth-child(1)'
-        css_ul_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-chapter-list:nth-child(7) > ul.row-content-chapter:nth-child(2)'
+        comic_name = response.css(css_h1_tag).css('::text').get().strip(' ,\n')
+        return comic_name
 
+    def getCoverImage(self, response):
+        css_cover_img_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-info:nth-child(5) > div.story-info-left:nth-child(1) > span.info-image:nth-child(1) > img.img-loading:nth-child(1)'
         cover_img = response.css(css_cover_img_tag).css(
             '::attr(src)').get().strip(' ,\n')
-        # css('::attr(style)').re_first(r'url\(([^\)]+)') will return "https://abc-xyz-name.png"
+        return cover_img
 
-        comic_name = response.css(css_h1_tag).css('::text').get().strip(' ,\n')
-        new_chapter = response.css(css_ul_tag).css('li.a-h:nth-child(1)')
-        full_chapter_url = new_chapter.css('a.chapter-name::attr(href)').get()
-        chapter_number_text = new_chapter.css(
-            'a.chapter-name').css('::text').get().strip(' ,\n')
-        # timeFrom = new_chapter.css(
-        #     'span.chapter-time').css('::text').get().strip(' ,\n')
-        time = new_chapter.css(
-            'span.chapter-time').css('::attr(title)').get()
-        # raw_time = HelperMoment().getRawTime(timeFrom)
-        raw_time = moment.date(time).format("DD MMMM YYYY hh:mm:ss")
+    def getChapters(self, response):
+        css_ul_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-chapter-list:nth-child(7) > ul.row-content-chapter:nth-child(2)'
+        chapterSelectors = response.css(
+            css_ul_tag).css('li.a-h:nth-child(-n+5)')
+        chapters = []
+        for cs in chapterSelectors[0:5]:
+            chapter_url = cs.css('a.chapter-name::attr(href)').get()
+            chapter_text = cs.css(
+                'a.chapter-name').css('::text').get().strip(' ,\n')
+            time = cs.css(
+                'span.chapter-time').css('::attr(title)').get()
+            time = moment.date(time).format("DD MMMM YYYY HH:mm:ss")
+            chapters.append({
+                "link": chapter_url,
+                "text": chapter_text,
+                "title": "",
+                "time": time
+            })
+        return chapters
+
+    def parse(self, response):
+        # css
+        website_name = 'Manganelo'
+        website_url = 'https://manganelo.com'
+
+        # css('::attr(style)').re_first(r'url\(([^\)]+)') will return "https://abc-xyz-name.png"
+        comic_name = self.getComicName(response)
+        cover_img = self.getCoverImage(response)
         comic_url = response.url
+
+        chapters = self.getChapters(response)
 
         # Populate the item
         item = ComicItem()
-
-        item['base_site_name'] = base_site_name
-        item['base_site_url'] = base_site_url
+        item['website_name'] = website_name
+        item['website_url'] = website_url
         item['comic_name'] = comic_name
-        item['chapter_number_link'] = full_chapter_url
-        item['chapter_number_text'] = chapter_number_text
-        item['raw_time'] = raw_time
         item['comic_url'] = comic_url
         item['cover_img'] = cover_img
-        item['chapter_title'] = ""
+        item['main_chapters'] = chapters
+        item['duck_chapters'] = []
+        item['rock_chapters'] = []
+        item['fox_chapters'] = []
+        item['panda_chapters'] = []
 
         yield {
-            'base_site_name': base_site_name,
-            'base_site_url': base_site_url,
-            'chapter_number_link': full_chapter_url,
-            'chapter_number_text': chapter_number_text,
-            'chapter_title': "",
-            'comic_name': comic_name,
-            'cover_img': cover_img,
-            'raw_time': raw_time,
-            'comic_url': comic_url,
+            'website_name': website_name,
+            'website_url': website_url,
+            "comic_name": comic_name,
+            "comic_url": comic_url,
+            "cover_img": cover_img,
+            "main_chapters": chapters,
+            "duck_chapters": [],
+            "rock_chapters": [],
+            "fox_chapters": [],
+            "panda_chapters": [],
         }

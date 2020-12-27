@@ -34,19 +34,4 @@ def run():
     reactor.run()  # block until the last call
 
 
-def copyDataToProject():
-    # copy items.json to target directory
-    print("__COPY items.json to working project __")
-    target_path = '/mnt/c/users/duongntse/desktop/vscode_projects/react-comics/src/api'
-    source_path = os.getcwd()
-    sourcefile = Path(source_path) / "items.json"
-    target = Path(target_path) / "items.json"
-
-    shutil.copyfile(sourcefile, target)
-    print(f"source: {sourcefile}")
-    print(f"target: {target}")
-    print("__COPY FINISHED __")
-
-
 run()
-# copyDataToProject()

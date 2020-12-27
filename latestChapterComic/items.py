@@ -13,13 +13,13 @@ class LatestchaptercomicItem(scrapy.Item):
     pass
 
 class ComicItem(Item):
-    base_site_name = Field()
-    base_site_url = Field()
+    website_name = Field()
+    website_url = Field()
     comic_name = Field()
-    cover_img = Field()
-    chapter_number_link = Field()
-    chapter_number_text = Field()
-    chapter_title = Field()
-    raw_time = Field()
     comic_url = Field()
-    prev_chap = Field()
+    cover_img = Field()
+    main_chapters = Field()
+    duck_chapters = Field()
+    rock_chapters = Field()
+    fox_chapters = Field()
+    panda_chapters = Field()

@@ -13,7 +13,7 @@ from helpermoment import HelperMoment
 
 
 """ ___Using for running command $python3 run.py___
- 
+
 """
 
 
@@ -48,76 +48,95 @@ class NettruyenSpider(scrapy.Spider):
 
         raw_time = moment.date(moment.now().year, int(month_numb), int(
             day_numb), int(hour_numb), int(minute_numb), 0)
-        print(f"raw_time: {raw_time}")
-        return raw_time.format("DD MMMM YYYY hh:mm:ss")
+        # print(f"raw_time: {raw_time}")
+        return raw_time.format("DD MMMM YYYY HH:mm:ss")
+
+    def getComicName(self, response):
+        comic_name = response.css('h1.title-detail').css('::text').get()
+        return comic_name
+
+    def getCoverImage(self, response):
+        css_cover_img = 'article#item-detail div.col-image img'
+        cover_img = response.css(css_cover_img).css('::attr(src)').get()
+        return cover_img
+
+    def getChapters(self, response):
+        chapterSelectors = response.css(
+            'div.list-chapter').css('li.row:nth-child(-n+6)')
+
+        chapters = []
+        for cs in chapterSelectors[1:6]:
+            chapter_text = cs.css(
+                'div.chapter').css('a::text').get()
+
+            chapter_url = cs.css(
+                'div.chapter').css('a::attr(href)').get()
+
+            chapter_title = ""
+
+            timeRaw = cs.css(
+                'div:nth-child(2)').css('::text').get().strip(' ,\n')
+
+            time = ''
+            # format: 1 giờ trước / 1 ngày trước / 1 tháng trước
+            isTimeFrom = re.search(
+                r'(\d+) (năm|tháng|tuần|ngày|giờ|phút|giây) (trước)', timeRaw) is not None
+            # format: Dec-23-2020 13:45
+            isTimeRaw = re.search(
+                r'\w{1,3}-\d{1,2}-\d{4}\s\d{2}:\d{1,2}', timeRaw) is not None
+            # format: 12-23-2020 13:45
+            isTimeRaw2 = re.search(
+                r'\d{1,2}:\d{1,2}\s\d{1,2}\/\d{1,2}', timeRaw) is not None
+
+            if (isTimeFrom):
+                timeFrom = HelperMoment().timeFromVnToEn(timeRaw)
+                time = HelperMoment().getRawTime(timeFrom)
+            if (isTimeRaw):
+                time = moment.date(timeRaw).format("DD MMMM YYYY hh:mm:ss")
+            if (isTimeRaw2):  # '23:52 06/10'
+                time = self.makeRawtime2(timeRaw)
+
+            chapters.append({
+                "link": chapter_url,
+                "text": chapter_text,
+                "title": chapter_title,
+                "time": time
+            })
+
+        return chapters
 
     def parse(self, response):
         comic_url = response.url
-        base_site_name = 'Nettruyen'
-        base_site_url = 'http://www.nettruyen.com'
+        website_name = 'Nettruyen'
+        website_url = 'http://www.nettruyen.com'
 
-        css_cover_img = 'article#item-detail div.col-image img'
+        cover_img = self.getCoverImage(response)
+        comic_name = self.getComicName(response)
 
-        cover_img = response.css(css_cover_img).css('::attr(src)').get()
-        comic_name = response.css('h1.title-detail').css('::text').get()
-
-        # print(f'cover_img: {cover_img}')
-        # print(f'comic_name: {comic_name}')
-
-        new_chapter = response.css('div.list-chapter').css('li.row:nth-child(2)')
-
-        chapter_number_text = new_chapter.css('div.chapter').css('a::text').get()
-
-        chapter_number_link = new_chapter.css('div.chapter').css('a::attr(href)').get()
-
-        chapter_title = ""
-
-        time = new_chapter.css('div:nth-child(2)').css('::text').get().strip(' ,\n')
-
-        raw_time = ''
-        timeFrom = ''
-        isTimeFrom = re.search(r'(\d+) (năm|tháng|tuần|ngày|giờ|phút|giây) (trước)', time) is not None
-        isTimeRaw = re.search(r'\w{1,3}-\d{1,2}-\d{4}\s\d{2}:\d{1,2}', time) is not None
-        isTimeRaw2 = re.search(r'\d{1,2}:\d{1,2}\s\d{1,2}\/\d{1,2}', time) is not None
-        # print(f'isTimeFrom: {isTimeFrom}')
-        print(f'TimeRaw: {time}')
-
-        if (isTimeFrom):
-            # print(f'time: {time}')
-            timeFrom = HelperMoment().timeFromVnToEn(time)
-            # print(f'timeFrom: {timeFrom}')
-            # yield timeFrom
-            raw_time = HelperMoment().getRawTime(timeFrom)
-        if (isTimeRaw):
-            raw_time = moment.date(time).format("DD MMMM YYYY hh:mm:ss")
-        if (isTimeRaw2):  # '23:52 06/10'
-            raw_time = self.makeRawtime2(time)
-
-            # raw_time = moment.date(time).format("DD MMMM YYYY hh:mm:ss")
-
-        # print(f'timeFrom: {timeFrom}')
-        # print(f'raw_time: {raw_time}')
+        chapters = self.getChapters(response)
 
         # Populate the item
         item = ComicItem()
-        item['base_site_name'] = base_site_name
-        item['base_site_url'] = base_site_url
-        item['cover_img'] = cover_img
+        item['website_name'] = website_name
+        item['website_url'] = website_url
         item['comic_name'] = comic_name
-        item['chapter_number_link'] = response.urljoin(chapter_number_link)
-        item['chapter_number_text'] = chapter_number_text
-        item['chapter_title'] = chapter_title
-        item['raw_time'] = raw_time
         item['comic_url'] = comic_url
+        item['cover_img'] = cover_img
+        item['main_chapters'] = chapters
+        item['duck_chapters'] = []
+        item['rock_chapters'] = []
+        item['fox_chapters'] = []
+        item['panda_chapters'] = []
 
         yield {
-            'base_site_name': base_site_name,
-            'base_site_url': base_site_url,
-            'chapter_number_link': response.urljoin(chapter_number_link),
-            'chapter_number_text': chapter_number_text,
-            'chapter_title': "",
-            'comic_name': comic_name,
-            'cover_img': cover_img,
-            'raw_time': raw_time,
-            'comic_url': comic_url,
+            'website_name': website_name,
+            'website_url': website_url,
+            "comic_name": comic_name,
+            "comic_url": comic_url,
+            "cover_img": cover_img,
+            "main_chapters": chapters,
+            "duck_chapters": [],
+            "rock_chapters": [],
+            "fox_chapters": [],
+            "panda_chapters": [],
         }

@@ -33,90 +33,103 @@ class MangaparkSpider(scrapy.Spider):
         'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
     }
 
-    def versionDuck(self):
-        stream = '#stream_4'
-#
-    def versionRock(self):
-        stream = '#stream_6'
-#
-    def versionFox(self):
-        stream = '#stream_1'
-#
-
-    def parse(self, response):
-        base_site_name = 'Mangapark'
-        base_site_url = 'https://mangapark.net'
-        manga_name_regex = rf'{base_site_url}/manga/(.*)'
-        comic_url = response.url
-        stream = '#stream_4'
-        onepiece = '#stream_3'
-        borutoNextGen = '#stream_3'
-        redstorm = '#stream_3'
-        undefeatableSwordsman = '#stream_4'
-        reMonster = '#stream_4'
-        dauphathuongkhung = '#stream_4'
-        talesofdemonsandgodsmadsnail = '#stream_4'
-        gosu = '#stream_1'
-
-        manga_name = re.search(manga_name_regex, comic_url).groups()[0]
-
-        print(f'manga_name: {manga_name}')
-
-        if(manga_name == 'one-piece'):
-            stream = onepiece
-        if(manga_name == 'red-storm'):
-            stream = redstorm
-        if(manga_name == 'the-undefeatable-swordsman'):
-            stream = undefeatableSwordsman
-        if(manga_name == 'boruto-naruto-next-generations'):
-            stream = borutoNextGen
-        if(manga_name == 're-monster'):
-            stream = reMonster
-        if(manga_name == 'fights-break-sphere'):
-            stream = dauphathuongkhung
-        if(manga_name == 'tales-of-demons-and-gods-mad-snail'):
-            stream = talesofdemonsandgodsmadsnail
-        if(manga_name == 'gosu'):
-            stream = gosu
-
-        print(f'stream: {stream}')
-        css_cover_img_tag = 'body > section.manga:nth-child(2) > div.container.content > div.row:nth-child(2) > div.col-12.col-md-3:nth-child(1) > div.cover > img'
+    def getChapters(self, response, stream):
+        css_div_stream = f'div{stream}'
         css_ul_tag = f'div{stream} > div.volume > ul.chapter'
-        css_first_li_tag = 'li.item:nth-child(1)'
+        css_first_5_li_tags = 'li.item:nth-child(-n+5)'
         css_title_h2_tag = 'body > section.manga:nth-child(2) > div.container.content > div.pb-1.mb-2.line-b-f.hd:nth-child(1) > h2'
 
-        cover_img = response.css(css_cover_img_tag).css('::attr(src)').get()
         comic_name = response.css(css_title_h2_tag).css('a::text').get()
-        latest_chapter = response.css(css_ul_tag).css(css_first_li_tag)
-        chapter_number_link = latest_chapter.css('div.ext').css(
-            'a:nth-child(5)::attr(href)').get()
-        full_chapter_url = response.urljoin(chapter_number_link)
-        chapter_number_text = latest_chapter.css(
-            'div.tit>a.ch').css('::text').get()
-        time = latest_chapter.css('div.ext > span.time').css(
-            '::text').get().strip(' ,\n')
-        raw_time = HelperMoment().getRawTime(time)
+        chapters_selectors = response.css(
+            css_div_stream).css(css_first_5_li_tags)
+        chapters = []
+        for chapter_selector in chapters_selectors[0:5]:
+            chapter_link = chapter_selector.css('div.ext').css(
+                'a:nth-child(5)::attr(href)').get()
+            chapter_url = response.urljoin(chapter_link)
+            chapter_text = chapter_selector.css(
+                'div.tit>a.ch').css('::text').get()
+            # print(chapter_text)
+            chapter_time = chapter_selector.css('div.ext > span.time').css(
+                '::text').get().strip(' ,\n')
+            raw_time = HelperMoment().getRawTime(chapter_time)
+            chapters.append({
+                "link": chapter_url,    # "https://mangapark.net/manga/re-monster/i2610850/c67"
+                "text": chapter_text,   # "ch.67"
+                "title": "",            # ""
+                "time": raw_time        # "01 December 2020 05:34:39"
+            })
+
+        return chapters
+
+    def versionDuck(self, response):
+        # print("versionDuck")
+        stream = '#stream_4'
+        return self.getChapters(response, stream)
+        """
+            "chapters": [
+                {
+                    "link": "https://mangapark.net/manga/re-monster/i2610850/c67",
+                    "text": "ch.67",
+                    "title": "",
+                    "time": "01 December 2020 05:34:39"
+                }
+            ]
+         """
+
+    def versionRock(self, response):
+        # print("versionRock")
+        stream = '#stream_6'
+        return self.getChapters(response, stream)
+
+    def versionFox(self, response):
+        # print("versionFox")
+        stream = '#stream_1'
+        return self.getChapters(response, stream)
+
+    def versionPanda(self, response):
+        # print("versionPanda")
+        stream = '#stream_3'
+        return self.getChapters(response, stream)
+
+    def parse(self, response):
+        website_name = 'Mangapark'
+        website_url = 'https://mangapark.net'
+        comic_name_regex = rf'{website_url}/manga/(.*)'
+        comic_url = response.url
+        comic_name = re.search(comic_name_regex, comic_url).groups()[0]
+
+        css_cover_img_tag = 'body > section.manga:nth-child(2) > div.container.content > div.row:nth-child(2) > div.col-12.col-md-3:nth-child(1) > div.cover > img'
+        cover_img = response.css(
+            css_cover_img_tag).css('::attr(src)').get()
+
+        duck = self.versionDuck(response)
+        rock = self.versionRock(response)
+        fox = self.versionFox(response)
+        panda = self.versionPanda(response)
 
         # Populate the item
         item = ComicItem()
-        item['base_site_name'] = base_site_name
-        item['base_site_url'] = base_site_url
-        item['chapter_number_link'] = full_chapter_url
-        item['chapter_number_text'] = chapter_number_text
-        item['chapter_title'] = ""
+        item['website_name'] = website_name
+        item['website_url'] = website_url
         item['comic_name'] = comic_name
-        item['cover_img'] = cover_img
-        item['raw_time'] = raw_time
         item['comic_url'] = comic_url
+        item['cover_img'] = cover_img
+        item['main_chapters'] = []
+        item['duck_chapters'] = duck
+        item['rock_chapters'] = rock
+        item['fox_chapters'] = fox
+        item['panda_chapters'] = panda
 
         yield {
-            'base_site_name': base_site_name,
-            'base_site_url': base_site_url,
-            'chapter_number_link': full_chapter_url,
-            'chapter_number_text': chapter_number_text,
-            'chapter_title': "",
-            'comic_name': comic_name,
-            'cover_img': cover_img,
-            'raw_time': raw_time,
-            'comic_url': comic_url,
+            'website_name': website_name,
+            'website_url': website_url,
+            "comic_name": comic_name,
+            "comic_url": comic_url,
+            "cover_img": cover_img,
+            "main_chapters": [],
+            "duck_chapters": duck,
+            'rock_chapters': rock,
+            'fox_chapters': fox,
+            'panda_chapters': panda,
         }
