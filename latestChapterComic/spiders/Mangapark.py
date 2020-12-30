@@ -37,9 +37,7 @@ class MangaparkSpider(scrapy.Spider):
         css_div_stream = f'div{stream}'
         css_ul_tag = f'div{stream} > div.volume > ul.chapter'
         css_first_5_li_tags = 'li.item:nth-child(-n+10)'
-        css_title_h2_tag = 'body > section.manga:nth-child(2) > div.container.content > div.pb-1.mb-2.line-b-f.hd:nth-child(1) > h2'
 
-        comic_name = response.css(css_title_h2_tag).css('a::text').get()
         chapters_selectors = response.css(
             css_div_stream).css(css_first_5_li_tags)
         chapters = []
@@ -95,9 +93,12 @@ class MangaparkSpider(scrapy.Spider):
     def parse(self, response):
         website_name = 'Mangapark'
         website_url = 'https://mangapark.net'
-        comic_name_regex = rf'{website_url}/manga/(.*)'
         comic_url = response.url
-        comic_name = re.search(comic_name_regex, comic_url).groups()[0]
+        # comic_name_regex = rf'{website_url}/manga/(.*)'
+        # comic_name = re.search(comic_name_regex, comic_url).groups()[0]
+
+        css_title_h2_tag = 'section.manga div.container.content div.hd h2 a'
+        comic_name = response.css(css_title_h2_tag).css('::text').get()
 
         css_cover_img_tag = 'body > section.manga:nth-child(2) > div.container.content > div.row:nth-child(2) > div.col-12.col-md-3:nth-child(1) > div.cover > img'
         cover_img = response.css(
