@@ -41,9 +41,9 @@ class MurimloginSpider(scrapy.Spider):
     def getChapters(self, response):
 
         chapterSelectors = response.css(
-            'div.chapter-list').css('div.row:nth-child(-n+5)')
+            'div.chapter-list').css('div.row:nth-child(-n+10)')
         chapters = []
-        for cs in chapterSelectors[0:5]:
+        for cs in chapterSelectors[0:20]:
             chapter_text = cs.css(
                 'span:nth-child(1)').css('a::text').get()
             chapter_url = cs.css(

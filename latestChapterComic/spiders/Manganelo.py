@@ -39,9 +39,9 @@ class ManganeloSpider(scrapy.Spider):
     def getChapters(self, response):
         css_ul_tag = 'body > div.body-site:nth-child(1) > div.container.container-main:nth-child(3) > div.container-main-left:nth-child(1) > div.panel-story-chapter-list:nth-child(7) > ul.row-content-chapter:nth-child(2)'
         chapterSelectors = response.css(
-            css_ul_tag).css('li.a-h:nth-child(-n+5)')
+            css_ul_tag).css('li.a-h:nth-child(-n+10)')
         chapters = []
-        for cs in chapterSelectors[0:5]:
+        for cs in chapterSelectors[0:20]:
             chapter_url = cs.css('a.chapter-name::attr(href)').get()
             chapter_text = cs.css(
                 'a.chapter-name').css('::text').get().strip(' ,\n')

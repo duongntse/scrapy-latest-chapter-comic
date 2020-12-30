@@ -28,7 +28,8 @@ class NettruyenSpider(scrapy.Spider):
         'http://www.nettruyen.com/truyen-tranh/gosu-cao-thu-2-169615',
         'http://www.nettruyen.com/truyen-tranh/yeu-than-ky-105810',
         'http://www.nettruyen.com/truyen-tranh/dang-nhap-murim',
-        'http://www.nettruyen.com/truyen-tranh/hoi-sinh-the-gioi-15852'
+        'http://www.nettruyen.com/truyen-tranh/hoi-sinh-the-gioi-15852',
+        'http://www.nettruyen.com/truyen-tranh/remonster-4049',
     ]
 
     custom_settings = {
@@ -62,10 +63,10 @@ class NettruyenSpider(scrapy.Spider):
 
     def getChapters(self, response):
         chapterSelectors = response.css(
-            'div.list-chapter').css('li.row:nth-child(-n+6)')
+            'div.list-chapter').css('li.row:nth-child(-n+11)')
 
         chapters = []
-        for cs in chapterSelectors[1:6]:
+        for cs in chapterSelectors[1:21]:
             chapter_text = cs.css(
                 'div.chapter').css('a::text').get()
 

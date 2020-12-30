@@ -36,14 +36,14 @@ class MangaparkSpider(scrapy.Spider):
     def getChapters(self, response, stream):
         css_div_stream = f'div{stream}'
         css_ul_tag = f'div{stream} > div.volume > ul.chapter'
-        css_first_5_li_tags = 'li.item:nth-child(-n+5)'
+        css_first_5_li_tags = 'li.item:nth-child(-n+10)'
         css_title_h2_tag = 'body > section.manga:nth-child(2) > div.container.content > div.pb-1.mb-2.line-b-f.hd:nth-child(1) > h2'
 
         comic_name = response.css(css_title_h2_tag).css('a::text').get()
         chapters_selectors = response.css(
             css_div_stream).css(css_first_5_li_tags)
         chapters = []
-        for chapter_selector in chapters_selectors[0:5]:
+        for chapter_selector in chapters_selectors[0:20]:
             chapter_link = chapter_selector.css('div.ext').css(
                 'a:nth-child(5)::attr(href)').get()
             chapter_url = response.urljoin(chapter_link)
