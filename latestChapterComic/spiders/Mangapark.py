@@ -30,7 +30,9 @@ class MangaparkSpider(scrapy.Spider):
     ]
 
     custom_settings = {
-        'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
+        # 'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36',
+        'LOG_FILE': 'logs/MangaparkSpider.log',
+        'LOG_LEVEL': 'DEBUG'
     }
 
     def getChapters(self, response, stream):

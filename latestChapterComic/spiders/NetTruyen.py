@@ -30,10 +30,15 @@ class NettruyenSpider(scrapy.Spider):
         'http://www.nettruyen.com/truyen-tranh/dang-nhap-murim',
         'http://www.nettruyen.com/truyen-tranh/hoi-sinh-the-gioi-15852',
         'http://www.nettruyen.com/truyen-tranh/remonster-4049',
+        'http://www.nettruyen.com/truyen-tranh/baki-son-of-ogre-9000',
+        'http://www.nettruyen.com/truyen-tranh/kattobi-itto-duong-dan-den-khung-thanh-bo-1-8428',
+        'http://nhattruyen.com/truyen-tranh/dau-pha-thuong-khung-4409'
     ]
 
     custom_settings = {
-        'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
+        # 'USER_AGENT': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36',
+        'LOG_FILE': 'logs/NettruyenSpider.log',
+        'LOG_LEVEL': 'DEBUG'
     }
 
     def makeRawtime2(self, time):  # '23:52 06/10'
@@ -52,6 +57,18 @@ class NettruyenSpider(scrapy.Spider):
         # print(f"raw_time: {raw_time}")
         return raw_time.format("DD MMMM YYYY HH:mm:ss")
 
+    def makeRawtime3(self, time):  # 11/07/19
+        date_arr = time.split('/')
+
+        day_numb = date_arr[0]
+        month_numb = date_arr[1]
+        year_numb = date_arr[2]
+
+        raw_time = moment.date(int(year_numb), int(month_numb), int(
+            day_numb))
+        # print(f"raw_time: {raw_time}")
+        return raw_time.format("DD MMMM YYYY HH:mm:ss")
+
     def getComicName(self, response):
         comic_name = response.css('h1.title-detail').css('::text').get()
         return comic_name
@@ -66,7 +83,7 @@ class NettruyenSpider(scrapy.Spider):
             'div.list-chapter').css('li.row:nth-child(-n+11)')
 
         chapters = []
-        for cs in chapterSelectors[1:21]:
+        for cs in chapterSelectors[1:11]:
             chapter_text = cs.css(
                 'div.chapter').css('a::text').get()
 
@@ -85,9 +102,12 @@ class NettruyenSpider(scrapy.Spider):
             # format: Dec-23-2020 13:45
             isTimeRaw = re.search(
                 r'\w{1,3}-\d{1,2}-\d{4}\s\d{2}:\d{1,2}', timeRaw) is not None
-            # format: 12-23-2020 13:45
+            # format: '23:52 06/10'
             isTimeRaw2 = re.search(
                 r'\d{1,2}:\d{1,2}\s\d{1,2}\/\d{1,2}', timeRaw) is not None
+            # format: 11/07/19
+            isTimeRaw3 = re.search(
+                r'\d{1,2}\/\d{1,2}\/\d{1,2}', timeRaw) is not None
 
             if (isTimeFrom):
                 timeFrom = HelperMoment().timeFromVnToEn(timeRaw)
@@ -96,6 +116,9 @@ class NettruyenSpider(scrapy.Spider):
                 time = moment.date(timeRaw).format("DD MMMM YYYY hh:mm:ss")
             if (isTimeRaw2):  # '23:52 06/10'
                 time = self.makeRawtime2(timeRaw)
+            # format: 11/07/19
+            if (isTimeRaw3):
+                time = self.makeRawtime3(timeRaw)
 
             chapters.append({
                 "link": chapter_url,
